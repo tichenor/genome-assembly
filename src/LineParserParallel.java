@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,8 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class LineParserParallel {
 
-    private static final int KILOBYTE = 1024;
-    private static final int MEGABYTE = 1024 * KILOBYTE;
     private static final String lineFeed = "\n";
     private static final String delimiter = "\t";
 
@@ -62,7 +57,8 @@ public class LineParserParallel {
     /**
      * Runnable task that finds exclusions for contig overlaps. If one contig is contained in the other, the task
      * stores the line position (data point) in a HashMap. The key is the file index and the value is a set of line
-     * positions (integers).
+     * positions (integers). This class is mostly for testing as its not very efficient to simply store all exclusions
+     * in a set.
      */
     class FindExclusionTask extends LineParseTask {
 
@@ -73,11 +69,63 @@ public class LineParserParallel {
         protected void doSomethingWithLine(String line) {
             String[] fields = line.split(delimiter);
             // Check if one contig is contained in the other by checking if the overlap is the whole contig.
-            if (fields[5].equals("0") && fields[6].equals(fields[7])
-                    || fields[9].equals("0") && fields[10].equals(fields[11])) {
+            if (
+                    (fields[5].equals("0") && fields[6].equals(fields[7])) // overlap is all of first contig
+                    || (fields[9].equals("0") && fields[10].equals(fields[11])) // overlap is all of second contig
+            ) {
                 // First contig contained in second or vice versa, note the position of the exclusion.
                 exclusions.computeIfAbsent(fileIndex, k -> new HashSet<>()); // Make new set if there is none yet.
                 exclusions.get(fileIndex).add(linePosition); // Add the line position to the set of exclusions for the file.
+            }
+        }
+    }
+
+    /**
+     * Runnable task that filters out any false overlaps (containments) and copies 'true' overlaps into a new text file.
+     */
+    class FilteredCopyTask extends LineParseTask {
+
+        private PrintWriter writer;
+
+        public FilteredCopyTask(int fileIndex) {
+            super(fileIndex);
+        }
+
+        protected void doSomethingWithLine(String line) {
+            String[] fields = line.split(delimiter);
+            // Check if one contig is contained in the other by checking if the overlap is the whole contig.
+            if (
+                    (!fields[5].equals("0") || !fields[6].equals(fields[7])) // overlap is not all of first contig
+                    && (!fields[9].equals("0") || !fields[10].equals(fields[11])) // overlap is not all of second contig
+            ) {
+                writer.println(line); // write line if overlap is not a containment
+            }
+        }
+
+        @Override
+        public void run() {
+            String line;
+            File sourceFile = new File(targetDir + filenamePrefix + String.format("%04d", fileIndex));
+            File targetFile = new File(targetDir + filenamePrefix + "F" + String.format("%04d", fileIndex));
+            try {
+                targetFile.createNewFile(); //TODO: check if true/false; if new file was created
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                FileReader fr = new FileReader(sourceFile);
+                BufferedReader br = new BufferedReader(fr);
+                writer = new PrintWriter(new FileWriter(targetFile));
+                while ((line = br.readLine()) != null) {
+                    linePosition++;
+                    doSomethingWithLine(line);
+                }
+                br.close();
+                fr.close();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -99,11 +147,12 @@ public class LineParserParallel {
     }
 
     /**
-     * The method that does the parsing.
+     * Find overlaps that are contaiments and mark the line position and file index where they are found. This method
+     * is mostly for testing as it's not very efficient to store all 'false' overlaps.
      */
     public void findExclusions() {
         exclusions = Collections.synchronizedMap(new HashMap<>()); // Initialize storage for exclusions.
-        ExecutorService threadPool = Executors.newFixedThreadPool(numThreads); // Create thread pool
+        threadPool = Executors.newFixedThreadPool(numThreads); // Initialize thread pool
         for (int i = 0; i < numFiles; i++) {
             // Submit a runnable task for each file.
             threadPool.submit(new FindExclusionTask(i)); // File index starts at 0
@@ -117,13 +166,28 @@ public class LineParserParallel {
         }
     }
 
+    public void filterExclusionsAndCopy() {
+        threadPool = Executors.newFixedThreadPool(numThreads);
+        for (int i = 0; i < numFiles; i++) {
+            threadPool.submit(new FilteredCopyTask(i));
+        }
+        threadPool.shutdown();
+        try {
+            threadPool.awaitTermination(60L, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
-        LineParserParallel lpp = new LineParserParallel("res/splits/", "chunk", 10, 2);
+        LineParserParallel lpp = new LineParserParallel("res/splits/", "chunkF", 10, 2);
         long start = System.nanoTime();
         lpp.findExclusions();
         long end = System.nanoTime();
         long dur = TimeUnit.NANOSECONDS.toMillis((end - start));
         System.out.println("Parse took " + dur + " ms.");
+
+
         for (Map.Entry<Integer, Set<Integer>> entry : lpp.exclusions.entrySet()) {
             System.out.println("Found " + entry.getValue().size() + " exclusions in file " + entry.getKey());
         }
