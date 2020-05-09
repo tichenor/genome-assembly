@@ -54,6 +54,20 @@ public class LineParserParallel {
         }
     }
 
+    class HeheTask extends LineParseTask {
+
+        public HeheTask(int fileIndex) {
+            super(fileIndex);
+        }
+
+        @Override
+        protected void doSomethingWithLine(String line) {
+            String[] fields = line.split(delimiter);
+            identifiers.add(fields[0]);
+            identifiers.add(fields[1]);
+        }
+    }
+
     /**
      * Runnable task that finds exclusions for contig overlaps. If one contig is contained in the other, the task
      * stores the line position (data point) in a HashMap. The key is the file index and the value is a set of line
@@ -179,18 +193,32 @@ public class LineParserParallel {
         }
     }
 
+    public void hehe() {
+        identifiers = Collections.synchronizedSet(new HashSet<>());
+        threadPool = Executors.newFixedThreadPool(numThreads);
+        for (int i = 0; i < numFiles; i++) {
+            threadPool.submit(new HeheTask(i));
+        }
+        threadPool.shutdown();
+        try {
+            threadPool.awaitTermination(60L, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
-        LineParserParallel lpp = new LineParserParallel("res/splits/", "chunkF", 10, 2);
+        LineParserParallel lpp = new LineParserParallel("res/splits/", "chunk", 641, 8);
         long start = System.nanoTime();
-        lpp.findExclusions();
+        lpp.hehe();
         long end = System.nanoTime();
         long dur = TimeUnit.NANOSECONDS.toMillis((end - start));
         System.out.println("Parse took " + dur + " ms.");
-
-
-        for (Map.Entry<Integer, Set<Integer>> entry : lpp.exclusions.entrySet()) {
-            System.out.println("Found " + entry.getValue().size() + " exclusions in file " + entry.getKey());
-        }
+        System.out.println("Identifiers: " + lpp.identifiers.size());
+//
+//        for (Map.Entry<Integer, Set<Integer>> entry : lpp.exclusions.entrySet()) {
+//            System.out.println("Found " + entry.getValue().size() + " exclusions in file " + entry.getKey());
+//        }
     }
 
 }
