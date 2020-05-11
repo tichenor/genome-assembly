@@ -5,6 +5,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+
+/**
+ * Class that handles reading from the data file, performing various tasks with it such as
+ * finding false overlaps (data points where one contig is a subset of the other), copying
+ * 'true' overlaps, and supports writing custom tasks that can be processed in parallel using
+ * one or more threads.
+ */
 public class LineParserParallel {
 
     private static final String lineFeed = "\n";
@@ -51,20 +58,6 @@ public class LineParserParallel {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    class HeheTask extends LineParseTask {
-
-        public HeheTask(int fileIndex) {
-            super(fileIndex);
-        }
-
-        @Override
-        protected void doSomethingWithLine(String line) {
-            String[] fields = line.split(delimiter);
-            identifiers.add(fields[0]);
-            identifiers.add(fields[1]);
         }
     }
 
@@ -161,7 +154,7 @@ public class LineParserParallel {
     }
 
     /**
-     * Find overlaps that are contaiments and mark the line position and file index where they are found. This method
+     * Find overlaps that are containments and mark the line position and file index where they are found. This method
      * is mostly for testing as it's not very efficient to store all 'false' overlaps.
      */
     public void findExclusions() {
@@ -193,24 +186,10 @@ public class LineParserParallel {
         }
     }
 
-    public void hehe() {
-        identifiers = Collections.synchronizedSet(new HashSet<>());
-        threadPool = Executors.newFixedThreadPool(numThreads);
-        for (int i = 0; i < numFiles; i++) {
-            threadPool.submit(new HeheTask(i));
-        }
-        threadPool.shutdown();
-        try {
-            threadPool.awaitTermination(60L, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void main(String[] args) {
         LineParserParallel lpp = new LineParserParallel("res/splits/", "chunk", 641, 8);
         long start = System.nanoTime();
-        lpp.hehe();
+        lpp.filterExclusionsAndCopy();
         long end = System.nanoTime();
         long dur = TimeUnit.NANOSECONDS.toMillis((end - start));
         System.out.println("Parse took " + dur + " ms.");
