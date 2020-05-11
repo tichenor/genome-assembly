@@ -5,7 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class CustomReader {
+/**
+ * Class that handles reading from the data file, doing various things with it such as counting
+ * the number of lines, indexing string identifiers as integers, and generating graphs.
+ */
+public class LineParser {
 
     public static int lineCount(String filename) throws IOException {
         // Probably only works for ASCII or UTF-8 character encoded files
@@ -46,7 +50,7 @@ public class CustomReader {
 
     public static Map<String, Integer> indexIdentifiers(String filename) {
         Map<String, Integer> indices = new HashMap<>();
-        FileReader fileReader = null;
+        FileReader fileReader;
         try {
             fileReader = new FileReader(filename);
         } catch (FileNotFoundException e) {
@@ -86,7 +90,7 @@ public class CustomReader {
 
     public static Map<String, Integer> indexAllIdentifiers() {
         Map<String, Integer> indices = new HashMap<>();
-        FileReader fileReader = null;
+        FileReader fileReader;
         String line;
         String[] tokens;
         int indexCount = 0;
@@ -111,10 +115,8 @@ public class CustomReader {
                 e.printStackTrace();
                 break;
             }
-            if (i % 10 == 0) {
-                System.out.println(i + " chunks processed.");
-            }
-
+            double percentage = ((double) i) / 640;
+            CustomWriter.updateProgress(percentage);
         }
         return indices;
     }
@@ -123,7 +125,7 @@ public class CustomReader {
         System.out.println("Generating vertices from indices...");
         Graph g = new Graph(indices.size());
         System.out.println("Vertices generated.");
-        FileReader fileReader = null;
+        FileReader fileReader;
         try {
             fileReader = new FileReader(filename);
         } catch (FileNotFoundException e) {
@@ -132,7 +134,7 @@ public class CustomReader {
         }
         BufferedReader bufferedReader = new BufferedReader(fileReader);
 
-        String line = null;
+        String line;
         String[] tokens;
         int indexCounter = 0;
         System.out.println("Generating edges from file...");
@@ -151,9 +153,7 @@ public class CustomReader {
     }
 
     public static Graph generateFullGraph(Map<String, Integer> indices) {
-        System.out.println("Generating vertices from indices...");
         Graph g = new Graph(indices.size());
-        System.out.println("Vertices generated.");
         String line;
         String[] tokens;
         for (int i = 0; i < 641; i++) {
@@ -173,9 +173,8 @@ public class CustomReader {
                 e.printStackTrace();
                 break;
             }
-            if (i % 10 == 0) {
-                System.out.println(i + " chunks processed.");
-            }
+            double percentage = ((double) i) / 640;
+            CustomWriter.updateProgress(percentage);
         }
         return g;
     }
