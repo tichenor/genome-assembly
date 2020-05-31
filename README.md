@@ -1,4 +1,5 @@
 # Genome assembly project for Norway spruce (Computer science for mathematicians VT20/HT18)
+Arvid Ehrlén
 > The goal of this project is to characterize a given graph. The graph comes from a real dataset
 > from the Spruce genome assembly project which aims at inferring the genome of Norway spruce.
 > In genome assembly, graphs are used to represent information about contigs, DNA segments, 
