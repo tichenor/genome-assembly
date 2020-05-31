@@ -63,6 +63,7 @@ the original data file must be split into 641 chunks containing 100 000 lines ea
 into res/splits/chunk####, where #### is a four digit number ranging from 0000 to 0641 (i.e.
 padded with zeros). This splitting can be done using a split command, e.g. UNIX split or Git
 Bash split if on windows. Example:
-$ split Spruce_fingerprint...olp.m4 chunk -l 100000 -a 4 -d
+
+`$ split Spruce_fingerprint...olp.m4 chunk -l 100000 -a 4 -d`
 
 Most information and details are found in the various docstrings.
