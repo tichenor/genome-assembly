@@ -57,4 +57,12 @@ A rough timeline is as follows:
 * Generate a graph representation of the filtered data using the integer indexing 
 * Do some computation on the graph (degree distribution, components)
 
+All data used in the project is assumed to lie in the resources (src/res) folder. Since the data
+is quite large, it is not included in this repository. Hence, if one wants to setup this project,
+the original data file must be split into 641 chunks containing 100 000 lines each, and put
+into res/splits/chunk####, where #### is a four digit number ranging from 0000 to 0641 (i.e.
+padded with zeros). This splitting can be done using a split command, e.g. UNIX split or Git
+Bash split if on windows. Example:
+$ split Spruce_fingerprint...olp.m4 chunk -l 100000 -a 4 -d
+
 Most information and details are found in the various docstrings.
