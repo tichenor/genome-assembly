@@ -17,6 +17,7 @@
 ## Table of contents
 * [Technologies](#technologies)
 * [Description](#description)
+* [Setup](#setup)
 
 ## Technologies
 * Java (openJDK 14)
@@ -57,6 +58,7 @@ A rough timeline is as follows:
 * Generate a graph representation of the filtered data using the integer indexing 
 * Do some computation on the graph (degree distribution, components)
 
+## Setup
 All data used in the project is assumed to lie in the resources (`src/res`) folder. Since the data
 is quite large, it is not included in this repository. Hence, if one wants to setup this project,
 the original data file must be split into 641 chunks containing 100 000 lines each, and put
