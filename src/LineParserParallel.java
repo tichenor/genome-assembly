@@ -10,24 +10,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Class that handles reading from the data file, performing various tasks with it such as
  * finding false overlaps (data points where one contig is a subset of the other), copying
  * 'true' overlaps, and supports writing custom tasks that can be processed in parallel using
- * one or more threads.
+ * one or more threads. This class is similar to LineParser, but performs tasks that can make use of
+ * parallel processing.
  */
 public class LineParserParallel {
 
-    private static final String lineFeed = "\n";
-    private static final String delimiter = "\t";
+    private static final String NEWLINE = "\n";
+    private static final String DELIMITER = "\t";
 
     private final String filenamePrefix;
     private final String targetDir;
     private final int numFiles;
     private final int numThreads;
     private ExecutorService threadPool;
-    private AtomicInteger counter = new AtomicInteger(0);
     public Set<String> identifiers;
     public Map<Integer, Set<Integer>> exclusions;
 
     /**
-     * Base class for a runnable task to parse each line of a specific file. To be run by another thread.
+     * Base class for a runnable task to parse each line of a specific file. Intended to be run by another thread.
      * The format for the filename needs to be adjusted if the directory or any filenames are modified.
      */
     abstract class LineParseTask implements Runnable {
@@ -42,6 +42,9 @@ public class LineParserParallel {
 
         protected abstract void doSomethingWithLine(String line);
 
+        /**
+         * Attempt to open an read from a file, and do something with each line.
+         */
         @Override
         public void run() {
             String line;
@@ -64,7 +67,7 @@ public class LineParserParallel {
     /**
      * Runnable task that finds exclusions for contig overlaps. If one contig is contained in the other, the task
      * stores the line position (data point) in a HashMap. The key is the file index and the value is a set of line
-     * positions (integers). This class is mostly for testing as its not very efficient to simply store all exclusions
+     * positions (integers). THIS TASK IS JUST FOR TESTING as its not very efficient to simply store all exclusions
      * in a set.
      */
     class FindExclusionTask extends LineParseTask {
@@ -74,7 +77,7 @@ public class LineParserParallel {
         }
 
         protected void doSomethingWithLine(String line) {
-            String[] fields = line.split(delimiter);
+            String[] fields = line.split(DELIMITER);
             // Check if one contig is contained in the other by checking if the overlap is the whole contig.
             if (
                     (fields[5].equals("0") && fields[6].equals(fields[7])) // overlap is all of first contig
@@ -99,7 +102,7 @@ public class LineParserParallel {
         }
 
         protected void doSomethingWithLine(String line) {
-            String[] fields = line.split(delimiter);
+            String[] fields = line.split(DELIMITER);
             // Check if one contig is contained in the other by checking if the overlap is the whole contig.
             if (
                     (!fields[5].equals("0") || !fields[6].equals(fields[7])) // overlap is not all of first contig
@@ -109,6 +112,13 @@ public class LineParserParallel {
             }
         }
 
+        /**
+         * This task needs some additional processing in the run-method since it not only reads from a file but copies
+         * some of its contents and writes it into a new file. The format of the files are:
+         * [target directory][filename prefix] + ####, where #### is a number between 0000 and 9999. For example:
+         * [res/splits/][chunkF][0123]. The suffix number is padded with 0's so that each file name ends with four
+         * digits.
+         */
         @Override
         public void run() {
             String line;
@@ -154,8 +164,8 @@ public class LineParserParallel {
     }
 
     /**
-     * Find overlaps that are containments and mark the line position and file index where they are found. This method
-     * is mostly for testing as it's not very efficient to store all 'false' overlaps.
+     * Find overlaps that are containments and mark the line position and file index where they are found. THIS METHOD
+     * IS JUST FOR TESTING as it's not very efficient to store all 'false' overlaps.
      */
     public void findExclusions() {
         exclusions = Collections.synchronizedMap(new HashMap<>()); // Initialize storage for exclusions.
@@ -173,6 +183,10 @@ public class LineParserParallel {
         }
     }
 
+    /**
+     * Parse all chunks (parts) of the original data and create filtered copies of them, where 'false' overlaps
+     * (containments) are ignored.
+     */
     public void filterExclusionsAndCopy() {
         threadPool = Executors.newFixedThreadPool(numThreads);
         for (int i = 0; i < numFiles; i++) {
@@ -187,6 +201,9 @@ public class LineParserParallel {
     }
 
     public static void main(String[] args) {
+        // Example:
+        // Parse all 641 chunks (parts) of the original data, and create filtered copies. The filtered copies will
+        // use 'chunkF' as filename prefixes.
         LineParserParallel lpp = new LineParserParallel("res/splits/", "chunk", 641, 8);
         long start = System.nanoTime();
         lpp.filterExclusionsAndCopy();

@@ -4,16 +4,16 @@ import java.util.*;
 
 /**
  * Adjacency list implementation of an undirected graph. Uses array index numbers as
- * vertex representations. Each array cell---vertex---contains a list of indices representing
- * the neighbouring vertices of that vertex.
+ * vertex representations. Each array cell---vertex---contains a list of indices (adjacency list of integers)
+ * representing the neighbouring vertices of that vertex.
  */
-public class Graph implements Serializable {
+public class Graph {
 
-   List<List<Integer>> graph;
+   private final List<List<Integer>> graph; // Internal graph representation.
 
     /**
      * The number of vertices is passed into the constructor in order to allocate the necessary memory
-     * for the array capacity. Once an instance is created, the number of vertices cannot be changed.
+     * for the array capacity. Once an instance is created, its number of vertices cannot be changed.
      * @param numVertices The number of vertices.
      */
    public Graph(int numVertices) {
@@ -23,6 +23,12 @@ public class Graph implements Serializable {
        }
    }
 
+    /**
+     * Adding an edge between to vertices in an undirected graph corresponds to appending the integers representing
+     * the vertices to their corresponding adjacency lists.
+     * @param v1 An integer representing the first vertex.
+     * @param v2 An integer representing the second vertex.
+     */
    public void addEdge(int v1, int v2) {
        graph.get(v1).add(v2);
        graph.get(v2).add(v1);
@@ -32,12 +38,17 @@ public class Graph implements Serializable {
        return graph.size();
    }
 
+    /**
+     * Count the number of edges in the graph. The number of edges in an undirected graph is the sum of the degrees of
+     * its vertices divided by 2.
+     * @return An integer representing the total number of edges in the graph.
+     */
    public int numberOfEdges() {
        int sum = 0;
        for (List<Integer> adjList : graph) {
            sum += adjList.size();
        }
-       return sum / 2; // Each edge is counted twice in an undirected graph.
+       return sum / 2; // Each edge is counted twice in the degree sum.
    }
 
     /**
@@ -47,22 +58,23 @@ public class Graph implements Serializable {
      */
    public Map<Integer, Integer> getDegreeDistribution() {
        Map<Integer, Integer> degFrequencies = new HashMap<>();
-       for (List<Integer> adjList : graph) {
-           int deg = adjList.size(); //TODO: should check for duplicates in adjacency list?
-           Integer count = degFrequencies.get(deg);
+       for (List<Integer> adjList : graph) { // Go through every vertex of the graph
+           int deg = adjList.size(); // Get its degree
+           Integer count = degFrequencies.get(deg); // Check if there are any other vertices of that degree
            if (count == null) {
-               degFrequencies.put(deg, 1);
+               degFrequencies.put(deg, 1); // If not, we put 1 as the value
            } else {
-               degFrequencies.put(deg, ++count);
+               degFrequencies.put(deg, ++count); // Otherwise we increment the vertex count by 1
            }
        }
        return degFrequencies;
    }
 
     /**
-     * Compute the number of connected component as well as their size (number of vertices) using
-     * an iterative depth first search.
-     * @return A list of integers corresponding to component sizes. The size of the array is the number of components.
+     * Compute the number of connected components as well as their size (number of vertices) using
+     * an iterative depth first search and return a list of the component sizes. The size of the list is the
+     * number of components.
+     * @return A list of integers representing component sizes.
      */
    public List<Integer> findConnectedComponents() {
        List<Integer> components = new ArrayList<>();
@@ -78,6 +90,13 @@ public class Graph implements Serializable {
        return components;
    }
 
+    /**
+     * Iterative depth first search using a stack.
+     * @param vertex The starting vertex.
+     * @param visited An array of booleans representing which vertices have been visited (processed).
+     * @param components The component size list.
+     * @param currentComponent The index of the current component.
+     */
    private void depthFirstSearch(int vertex, boolean[] visited, List<Integer> components, int currentComponent) {
        Stack<Integer> stack = new Stack<>();
        stack.push(vertex);

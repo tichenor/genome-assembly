@@ -6,6 +6,11 @@ public class Main {
 
     public static void main(String[] args) {
 
+        /*
+         * Run a full computation on the data set. The data is assumed to have been split into chunks and filtered
+         * with the FilteredCopyTask in LineParserParallel.
+         */
+
         // Index all unique string identifiers to integers.
         System.out.println("Indexing identifiers...");
         long start = System.nanoTime();
@@ -35,7 +40,7 @@ public class Main {
         end = System.nanoTime();
         CustomWriter.testDuration(start, end);
         System.out.println("Found " + degFreqs.size() + " different degree values of graph.");
-        CustomWriter.writeMapToFile(degFreqs, degFreqs.size() + 1, "degreeFrequencies",
+        CustomWriter.writeMapToFile(degFreqs, "degreeFrequencies",
                 "Degree frequencies -- (degree):(vertex count) -- " + degFreqs.size() + " entries.");
         System.out.println("--------------------");
 
@@ -46,7 +51,7 @@ public class Main {
         end = System.nanoTime();
         CustomWriter.testDuration(start, end);
         System.out.println("Found " + components.size() + " connected components.");
-        CustomWriter.writeListToFile(components, components.size() + 1, "components",
+        CustomWriter.writeListToFile(components, "components",
                 "Connected components -- (component number):(number of vertices) -- " + components.size() +
                         " components.");
         System.out.println("--------------------");
