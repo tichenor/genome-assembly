@@ -29,7 +29,7 @@ This was split into 641 chunks/parts of 100 000 lines each. This is assumed by t
 Most of the detailed information of the classes and their methods can be found in docstrings.
 I will therefore restrict this description to an overview of how they work together.
 
-LineParser.java and LineParserParallel.java handles IO processing of the data chunks, and contain
+`LineParser.java` and `LineParserParallel.java` handles IO processing of the data chunks, and contain
 methods for things such as filtering out false overlaps (instances where one contig is contained 
 within another and therefore not a relevant data point), indexing contig identifiers, and generating
 a graph representation of the data. 
@@ -39,14 +39,14 @@ contig identifiers (i.e. mapping each unique contig string identifier to a uniqu
 internal graph representation) is more difficult to do with parallel processing and is handled 
 by the regular line parser.
 
-Graph.java contains an adjacency list implementation of an undirected graph, and is used to represent
+`Graph.java` contains an adjacency list implementation of an undirected graph, and is used to represent
 the data as a graph data structure. It contains methods for finding degree distributions, connected
 components and such.
 
-CustomWriter.java is a small utility class that contains some methods for printing information to the
+`CustomWriter.java` is a small utility class that contains some methods for printing information to the
 console and writing results to text files for future use (e.g. making charts and such).
 
-Main.java is where the things are put together in order to create a graph representation of the data
+`Main.java` is where the things are put together in order to create a graph representation of the data
 and find its degree distribution and component distribution.
 
 A rough timeline is as follows:
